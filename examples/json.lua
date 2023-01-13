@@ -1,8 +1,18 @@
 -- cargo run -- examples/json.lua
 
-dayax['/api/person/:name'] = function () 
+dayax:get('/api/person/:id', function (req) 
     return {
-        name = "David",
-        age = 10
+        id = req.path.id,
+        age = 10,
+        name = "Manolo"
     }
-end 
+end)
+
+dayax:delete('/api/person/:id', function (req) 
+    return {
+        msg = "Deleted person with name" .. req.path.id,
+        id = req.path.id
+    }
+end)
+
+
