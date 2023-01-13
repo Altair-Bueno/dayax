@@ -15,7 +15,7 @@ use axum::Server;
 use tokio::sync::{oneshot::Sender, Mutex};
 use tracing::info;
 
-use crate::cli::CLI;
+use crate::cli::Cli;
 use crate::userdata::Dayax;
 
 async fn handle_signals(mut signals: Signals, sender: Sender<i32>) {
@@ -24,13 +24,13 @@ async fn handle_signals(mut signals: Signals, sender: Sender<i32>) {
     }
 }
 
-async fn run(CLI { file, address }: CLI) -> eyre::Result<()> {
+async fn run(Cli { file, address }: Cli) -> eyre::Result<()> {
     let pid = std::process::id();
     info!(pid, "Initializing server");
 
     // Init the signal handler
     let (signal_sender, signal_reciver) = tokio::sync::oneshot::channel();
-    let signals = Signals::new(&[SIGHUP, SIGTERM, SIGINT, SIGQUIT])?;
+    let signals = Signals::new([SIGHUP, SIGTERM, SIGINT, SIGQUIT])?;
     let handle = signals.handle();
     let signals_task = tokio::spawn(handle_signals(signals, signal_sender));
 
@@ -51,7 +51,7 @@ async fn run(CLI { file, address }: CLI) -> eyre::Result<()> {
         .serve(router.with_state(appstate.clone()).into_make_service())
         .with_graceful_shutdown(async {
             let signal = signal_reciver.await.ok();
-            let name = signal.map(signal_name).flatten().unwrap_or("UNKNOWN");
+            let name = signal.and_then(signal_name).unwrap_or("UNKNOWN");
             info!(?signal, name, "Shutting down server");
         })
         .await?;
@@ -71,5 +71,5 @@ async fn run(CLI { file, address }: CLI) -> eyre::Result<()> {
 async fn main() -> eyre::Result<()> {
     color_eyre::install()?;
     tracing_subscriber::fmt::init();
-    run(CLI::parse()).await
+    run(Cli::parse()).await
 }

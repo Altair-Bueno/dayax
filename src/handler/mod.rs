@@ -39,8 +39,8 @@ pub async fn request_handler(
 }
 
 // Call is sync because !Send MutexGuard
-fn exec_lua_registry_callback<'lua>(
-    lua: &'lua Lua,
+fn exec_lua_registry_callback(
+    lua: &Lua,
     registry_key: &RegistryKey,
     arguments: impl Serialize,
 ) -> eyre::Result<serde_json::Value> {
