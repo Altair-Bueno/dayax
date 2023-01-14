@@ -1,5 +1,5 @@
 dayax:get("/", function(req) 
-    local body = req.searchParams.format == 'json' and { response = "json"} or "String response"
+    local body = req.searchParams.format == 'json' and req or "Json request are more interesting"
     return {
         headers = {
             ["X-my-custom-header"] = "FizzBuz"
@@ -10,5 +10,7 @@ dayax:get("/", function(req)
 end)
 
 dayax:get("/redirect", function (req) 
-    return { redirect = "/"}
+    return { redirect = "/" }
 end)
+
+dayax:any("/echo/:hello", function (req) return { body = req } end)

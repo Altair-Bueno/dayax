@@ -28,9 +28,9 @@ impl IntoResponse for DayaxResponse {
 #[derive(Debug, Deserialize)]
 pub struct FullDayaxResponse {
     #[serde(alias = "statusCode")]
-    status_code: u16,
+    status_code: Option<u16>,
     redirect: Option<String>,
-    headers: HashMap<String, String>,
+    headers: Option<HashMap<String, String>>,
     body: Option<Value>,
 }
 
@@ -39,8 +39,8 @@ impl IntoResponse for FullDayaxResponse {
         if let Some(redirect) = self.redirect {
             return Redirect::temporary(&redirect).into_response();
         }
-        let headers = AppendHeaders(self.headers);
-        let status_code = StatusCode::from_u16(self.status_code).unwrap();
+        let headers = AppendHeaders(self.headers.unwrap_or_default());
+        let status_code = StatusCode::from_u16(self.status_code.unwrap_or(200)).unwrap();
 
         let body = match self.body {
             None | Some(Value::Null) => Default::default(),
