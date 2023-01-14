@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use axum::http::StatusCode;
+use axum::response::AppendHeaders;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Json;
@@ -20,10 +24,13 @@ impl IntoResponse for DayaxResponse {
         }
     }
 }
-// TODO add more options
+
 #[derive(Debug, Deserialize)]
 pub struct FullDayaxResponse {
+    #[serde(alias = "statusCode")]
+    status_code: u16,
     redirect: Option<String>,
+    headers: HashMap<String, String>,
     body: Option<Value>,
 }
 
@@ -32,11 +39,14 @@ impl IntoResponse for FullDayaxResponse {
         if let Some(redirect) = self.redirect {
             return Redirect::temporary(&redirect).into_response();
         }
+        let headers = AppendHeaders(self.headers);
+        let status_code = StatusCode::from_u16(self.status_code).unwrap();
 
         let body = match self.body {
             None | Some(Value::Null) => Default::default(),
             Some(Value::Array(x)) => Json(x).into_response(),
             Some(Value::Object(x)) => Json(x).into_response(),
+            Some(Value::String(x)) => x.into_response(),
             Some(body) => {
                 error!(?body, "Invalid body type");
                 (
@@ -46,7 +56,6 @@ impl IntoResponse for FullDayaxResponse {
                     .into_response()
             }
         };
-
-        (body).into_response()
+        (status_code, headers, body).into_response()
     }
 }
