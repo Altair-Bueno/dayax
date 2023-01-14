@@ -40,7 +40,11 @@ impl IntoResponse for FullDayaxResponse {
             return Redirect::temporary(&redirect).into_response();
         }
         let headers = AppendHeaders(self.headers.unwrap_or_default());
-        let status_code = StatusCode::from_u16(self.status_code.unwrap_or(200)).unwrap();
+        let status_code = if let Some(code) = self.status_code {
+            StatusCode::from_u16(code).unwrap()
+        } else {
+            Default::default()
+        };
 
         let body = match self.body {
             None | Some(Value::Null) => Default::default(),
