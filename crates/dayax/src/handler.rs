@@ -1,3 +1,4 @@
+use http::StatusCode;
 use mlua::LuaSerdeExt;
 use mlua::RegistryKey;
 use mlua::Value;
@@ -25,17 +26,10 @@ pub async fn request_handler(
         exec_lua_registry_callback(lua_lock.deref(), registry_key.as_ref(), arguments)
     };
 
-    match result {
-        Ok(x) => x.into_response(),
-        Err(error) => {
-            error!("{error}");
-            (
-                http::status::StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal Server Error",
-            )
-                .into_response()
-        }
-    }
+    result.map_err(|error| {
+        error!("{error}");
+        (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
+    })
 }
 
 // Call is sync because !Send MutexGuard
