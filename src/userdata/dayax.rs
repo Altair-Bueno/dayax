@@ -57,6 +57,7 @@ impl Dayax {
             "PUT" => axum::routing::put(handler),
             "PATCH" => axum::routing::patch(handler),
             "DELETE" => axum::routing::delete(handler),
+            "HEAD" => axum::routing::head(handler),
             _ => axum::routing::any(handler),
         };
         this.router = temp.route(&path, method_router);
@@ -67,19 +68,23 @@ impl Dayax {
     }
 
     gen_dayax_http_verb!(get, "GET");
+    gen_dayax_http_verb!(head, "HEAD");
     gen_dayax_http_verb!(post, "POST");
     gen_dayax_http_verb!(put, "PUT");
     gen_dayax_http_verb!(patch, "PATCH");
     gen_dayax_http_verb!(delete, "DELETE");
+    gen_dayax_http_verb!(any, "*");
 }
 
 impl UserData for Dayax {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method_mut("route", Dayax::route);
         methods.add_method_mut("get", Dayax::get);
+        methods.add_method_mut("head", Dayax::head);
         methods.add_method_mut("post", Dayax::post);
         methods.add_method_mut("put", Dayax::put);
         methods.add_method_mut("patch", Dayax::patch);
         methods.add_method_mut("delete", Dayax::delete);
+        methods.add_method_mut("any", Dayax::any);
     }
 }
