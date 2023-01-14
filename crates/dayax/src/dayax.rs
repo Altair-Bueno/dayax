@@ -1,4 +1,3 @@
-use crate::handler::DayaxRequest;
 use axum::extract::State;
 use mlua::Lua;
 use mlua::UserData;
@@ -8,6 +7,8 @@ use tracing::debug;
 
 use axum::Router;
 use mlua::Function;
+
+use crate::request::DayaxRequest;
 
 #[derive(Debug, Clone, Default)]
 pub struct Dayax {
