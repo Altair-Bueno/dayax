@@ -1,5 +1,4 @@
-use crate::handler::HandlerRequest;
-use crate::runtime::get_registry_request_key;
+use crate::handler::DayaxRequest;
 use axum::extract::State;
 use mlua::Lua;
 use mlua::UserData;
@@ -15,6 +14,18 @@ pub struct Dayax {
     pub router: Router<Arc<Mutex<Lua>>>,
 }
 
+impl Dayax {
+    pub fn new() -> Dayax {
+        Default::default()
+    }
+}
+
+impl From<Dayax> for Router<Arc<Mutex<Lua>>> {
+    fn from(value: Dayax) -> Self {
+        value.router
+    }
+}
+
 macro_rules! gen_dayax_http_verb {
     ( $method_name:tt , $verb:tt ) => {
         fn $method_name<'lua, 'this>(
@@ -25,12 +36,6 @@ macro_rules! gen_dayax_http_verb {
             Dayax::route(lua, this, ($verb.into(), path, callback))
         }
     };
-}
-
-impl Dayax {
-    pub fn new() -> Dayax {
-        Default::default()
-    }
 }
 
 impl Dayax {
@@ -45,10 +50,9 @@ impl Dayax {
 
         let mut temp = Router::new();
         std::mem::swap(&mut temp, &mut this.router);
-        let key = get_registry_request_key(&method, &path);
         let registry_key = lua.create_registry_value(callback)?;
         let registry_key = Arc::new(registry_key);
-        let handler = move |State(lua_mutex): State<Arc<_>>, req: HandlerRequest| async move {
+        let handler = move |State(lua_mutex): State<Arc<_>>, req: DayaxRequest| async move {
             crate::handler::request_handler(&lua_mutex, registry_key.clone(), req).await
         };
         let method_router = match method.as_str() {
@@ -62,7 +66,7 @@ impl Dayax {
         };
         this.router = temp.route(&path, method_router);
 
-        debug!(method, path, line, key, "Loaded request handler");
+        debug!(method, path, line, "Loaded request handler");
 
         Ok(())
     }

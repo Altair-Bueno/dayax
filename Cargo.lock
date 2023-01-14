@@ -42,7 +42,6 @@ checksum = "1304eab461cf02bd70b083ed8273388f9724c549b316ba3d1e213ce0e9e7fb7e"
 dependencies = [
  "async-trait",
  "axum-core",
- "axum-macros",
  "bitflags",
  "bytes",
  "futures-util",
@@ -83,18 +82,6 @@ dependencies = [
  "rustversion",
  "tower-layer",
  "tower-service",
-]
-
-[[package]]
-name = "axum-macros"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc7d7c3e69f305217e317a28172aab29f275667f2e1c15b87451e134fe27c7b1"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -214,14 +201,26 @@ name = "dayax"
 version = "0.1.0"
 dependencies = [
  "axum",
- "clap",
- "color-eyre",
  "eyre",
- "futures",
  "http",
  "mlua",
  "serde",
  "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "dayax-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "color-eyre",
+ "dayax",
+ "eyre",
+ "futures",
+ "mlua",
  "signal-hook",
  "signal-hook-tokio",
  "tokio",
@@ -594,9 +593,6 @@ dependencies = [
  "bstr",
  "cc",
  "erased-serde",
- "futures-core",
- "futures-task",
- "futures-util",
  "lua-src",
  "luajit-src",
  "num-traits",

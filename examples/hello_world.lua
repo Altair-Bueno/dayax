@@ -1,4 +1,4 @@
 -- cargo run -- examples/hello_world.lua
-dayax:get("/", function () 
+dayax:any("/", function () 
     return "Hello world!"
 end)

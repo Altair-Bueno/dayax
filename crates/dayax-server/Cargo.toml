@@ -1,0 +1,21 @@
+[package]
+name = "dayax-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+axum = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+dayax = { workspace = true }
+eyre = { workspace = true }
+mlua = { workspace = true, features = ["luajit", "vendored"] }
+
+color-eyre = { workspace = true }
+tracing-subscriber = { workspace = true }
+signal-hook = { workspace = true }
+signal-hook-tokio = { workspace = true }
+futures = { workspace = true }
