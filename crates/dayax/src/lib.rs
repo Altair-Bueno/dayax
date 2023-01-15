@@ -6,8 +6,8 @@ mod response;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+pub use crate::dayax::Dayax;
 use axum::Router;
-pub use dayax::Dayax;
 use mlua::Lua;
 
 /// Type alias for [`axum::Router`] that has `DayaxState` as state
