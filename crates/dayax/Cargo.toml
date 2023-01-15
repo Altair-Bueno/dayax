@@ -22,3 +22,4 @@ rstest = { workspace = true }
 speculoos = { workspace = true }
 mlua = { workspace = true, features = ["luajit", "vendored"] }
 tower = { workspace = true }
+hyper = { workspace = true }
