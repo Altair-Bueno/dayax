@@ -15,3 +15,9 @@ http = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 http-body = { workspace = true }
+mime = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+speculoos = { workspace = true }
+mlua = { workspace = true, features = ["luajit", "vendored"] }

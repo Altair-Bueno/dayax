@@ -72,17 +72,18 @@ where
             })
             .collect();
         let req = Request::from_parts(parts, body);
-        let body = match headers
+        let mime = headers
             .get(http::header::CONTENT_TYPE.as_str())
-            .map(String::as_str)
-        {
-            Some("application/json") => {
+            .map(|x| x.parse::<mime::Mime>().ok())
+            .flatten();
+        let body = match mime {
+            Some(x) if mime::APPLICATION_JSON == x => {
                 Json::from_request(req, state)
                     .await
                     .map_err(IntoResponse::into_response)?
                     .0
             }
-            Some("application/x-www-form-urlencoded") => {
+            Some(x) if x == mime::APPLICATION_WWW_FORM_URLENCODED => {
                 Form::from_request(req, state)
                     .await
                     .map_err(IntoResponse::into_response)?
