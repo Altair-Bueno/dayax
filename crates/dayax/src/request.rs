@@ -6,8 +6,12 @@ use axum::extract::FromRequestParts;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::BoxError;
+use axum::Form;
 
 use axum::http::Request;
+use axum::response::IntoResponse;
+use axum::response::Response;
+use axum::Json;
 use http::HeaderMap;
 use http::Method;
 use http::Uri;
@@ -21,7 +25,7 @@ pub struct DayaxRequest {
     uri: String,
     path: HashMap<String, String>,
     headers: HashMap<String, String>,
-    body: String,
+    body: serde_json::Value,
 }
 
 #[async_trait]
@@ -34,37 +38,61 @@ where
     B::Error: Into<BoxError>,
     S: Send + Sync,
 {
-    type Rejection = String;
+    type Rejection = Response;
 
     async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
         let (mut parts, body) = req.into_parts();
+        // Infallible
         let method = Method::from_request_parts(&mut parts, state)
             .await
             .unwrap()
             .to_string();
         let Query(search_params) = Query::from_request_parts(&mut parts, state)
             .await
-            .map_err(|x| x.to_string())?;
+            .map_err(IntoResponse::into_response)?;
+        // Infallible
         let uri = Uri::from_request_parts(&mut parts, state)
             .await
             .unwrap()
             .to_string();
-        let Path(path) = Path::from_request_parts(&mut parts, state).await.unwrap();
+        let Path(path) = Path::from_request_parts(&mut parts, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
 
-        let headers = HeaderMap::from_request_parts(&mut parts, state)
+        // Infallible
+        let headers: HashMap<_, _> = HeaderMap::from_request_parts(&mut parts, state)
             .await
             .unwrap()
-            .into_iter()
+            .iter()
             .map(|(key, value)| {
                 (
-                    key.map(|x| x.to_string()).unwrap_or_default(),
-                    value.to_str().unwrap_or_default().to_owned(),
+                    key.to_string(),
+                    value.to_str().unwrap_or_default().to_string(),
                 )
             })
             .collect();
-        // TODO extract everything
         let req = Request::from_parts(parts, body);
-        let body = String::from_request(req, state).await.unwrap();
+        let body = match headers
+            .get(http::header::CONTENT_TYPE.as_str())
+            .map(String::as_str)
+        {
+            Some("application/json") => {
+                Json::from_request(req, state)
+                    .await
+                    .map_err(IntoResponse::into_response)?
+                    .0
+            }
+            Some("application/x-www-form-urlencoded") => {
+                Form::from_request(req, state)
+                    .await
+                    .map_err(IntoResponse::into_response)?
+                    .0
+            }
+            _ => String::from_request(req, state)
+                .await
+                .map(serde_json::Value::String)
+                .map_err(IntoResponse::into_response)?,
+        };
         Ok(DayaxRequest {
             method,
             search_params,
