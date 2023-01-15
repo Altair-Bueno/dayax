@@ -21,3 +21,4 @@ mime = { workspace = true }
 rstest = { workspace = true }
 speculoos = { workspace = true }
 mlua = { workspace = true, features = ["luajit", "vendored"] }
+tower = { workspace = true }

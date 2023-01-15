@@ -25,6 +25,7 @@ clap = "4.0.32"
 # Test dependencies
 rstest = "0.16.0"
 speculoos = "0.11.0"
+tower = "0.4.13"
 
 [workspace.dependencies.mlua]
 version = "0.8.7"
