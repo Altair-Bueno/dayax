@@ -3,6 +3,7 @@ use mlua::LuaSerdeExt;
 use mlua::RegistryKey;
 use mlua::Value;
 use std::sync::Arc;
+use tracing::debug;
 use tracing::error;
 
 use axum::http;
@@ -11,6 +12,7 @@ use axum::response::IntoResponse;
 use mlua::Function;
 
 use crate::request::DayaxRequest;
+use crate::response::DayaxResponse;
 use crate::DayaxState;
 
 #[derive(Debug, Clone)]
@@ -29,7 +31,7 @@ impl DayaxRequestHandler {
     pub async fn handle(self, request: DayaxRequest) -> impl IntoResponse {
         // Keep the lock only for lua code. Transform into response outside the
         // async block
-        let result: Result<_, eyre::ErrReport> = async move {
+        let result: Result<DayaxResponse, eyre::ErrReport> = async move {
             let lua = self.state.lock().await;
             let callback: Function = lua.registry_value(&self.callback_registry_key)?;
             let arguments = lua.to_value(&request)?;
@@ -40,6 +42,7 @@ impl DayaxRequestHandler {
         .await;
         result.map_err(|error| {
             error!("{error}");
+            debug!(?error);
             (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
         })
     }
