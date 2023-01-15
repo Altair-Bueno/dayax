@@ -12,6 +12,7 @@ use tracing::error;
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum DayaxResponse {
+    Empty,
     Plain(String),
     Full(FullDayaxResponse),
 }
@@ -19,6 +20,7 @@ pub enum DayaxResponse {
 impl IntoResponse for DayaxResponse {
     fn into_response(self) -> axum::response::Response {
         match self {
+            DayaxResponse::Empty => Default::default(),
             DayaxResponse::Plain(text) => text.into_response(),
             DayaxResponse::Full(fdr) => fdr.into_response(),
         }
@@ -52,7 +54,10 @@ impl IntoResponse for FullDayaxResponse {
             Some(Value::Object(x)) => Json(x).into_response(),
             Some(Value::String(x)) => x.into_response(),
             Some(body) => {
-                error!(?body, "Invalid body type");
+                error!(
+                    ?body,
+                    "Invalid body type. Only tables and strings are allowed"
+                );
                 (
                     http::status::StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error",
