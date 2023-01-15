@@ -3,17 +3,17 @@ use axum::routing::MethodFilter;
 use mlua::Lua;
 use mlua::UserData;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::debug;
 
 use axum::Router;
 use mlua::Function;
 
-use crate::request::DayaxRequest;
+use crate::handler::DayaxRequestHandler;
+use crate::DayaxRouter;
 
 #[derive(Debug, Clone, Default)]
 pub struct Dayax {
-    pub router: Router<Arc<Mutex<Lua>>>,
+    router: DayaxRouter,
 }
 
 impl Dayax {
@@ -22,7 +22,7 @@ impl Dayax {
     }
 }
 
-impl From<Dayax> for Router<Arc<Mutex<Lua>>> {
+impl From<Dayax> for DayaxRouter {
     fn from(value: Dayax) -> Self {
         value.router
     }
@@ -55,8 +55,8 @@ impl Dayax {
         std::mem::swap(&mut temp, &mut self.router);
         let registry_key = lua.create_registry_value(callback)?;
         let registry_key = Arc::new(registry_key);
-        let handler = move |State(lua_mutex): State<Arc<_>>, req: DayaxRequest| async move {
-            crate::handler::request_handler(&lua_mutex, registry_key.clone(), req).await
+        let handler = move |State(state): State<_>, req| {
+            DayaxRequestHandler::new(registry_key, state).handle(req)
         };
         self.router = temp.route(&path, axum::routing::on(method, handler));
 

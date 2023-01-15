@@ -2,45 +2,45 @@ use http::StatusCode;
 use mlua::LuaSerdeExt;
 use mlua::RegistryKey;
 use mlua::Value;
-use std::ops::Deref;
-use tokio::sync::Mutex;
+use std::sync::Arc;
 use tracing::error;
 
 use axum::http;
 
 use axum::response::IntoResponse;
 use mlua::Function;
-use mlua::Lua;
 
 use crate::request::DayaxRequest;
-use crate::response::DayaxResponse;
+use crate::DayaxState;
 
-pub async fn request_handler(
-    lua_mutex: &Mutex<Lua>,
-    registry_key: impl AsRef<RegistryKey>,
-    arguments: DayaxRequest,
-) -> impl IntoResponse {
-    let result = {
-        // Keep the lock only for this fn call
-        let lua_lock = lua_mutex.lock().await;
-        exec_lua_registry_callback(lua_lock.deref(), registry_key.as_ref(), arguments)
-    };
-
-    result.map_err(|error| {
-        error!("{error}");
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
-    })
+#[derive(Debug, Clone)]
+pub struct DayaxRequestHandler {
+    callback_registry_key: Arc<RegistryKey>,
+    state: DayaxState,
 }
 
-// Call is sync because !Send MutexGuard
-fn exec_lua_registry_callback(
-    lua: &Lua,
-    registry_key: &RegistryKey,
-    arguments: DayaxRequest,
-) -> eyre::Result<DayaxResponse> {
-    let callback: Function = lua.registry_value(registry_key)?;
-    let arguments = lua.to_value(&arguments)?;
-    let value: Value = callback.call(arguments)?;
-    let value = serde_json::to_value(value)?;
-    Ok(serde_json::from_value(value)?)
+impl DayaxRequestHandler {
+    pub fn new(callback_registry_key: Arc<RegistryKey>, state: DayaxState) -> Self {
+        Self {
+            callback_registry_key,
+            state,
+        }
+    }
+    pub async fn handle(self, request: DayaxRequest) -> impl IntoResponse {
+        // Keep the lock only for lua code. Transform into response outside the
+        // async block
+        let result: Result<_, eyre::ErrReport> = async move {
+            let lua = self.state.lock().await;
+            let callback: Function = lua.registry_value(&self.callback_registry_key)?;
+            let arguments = lua.to_value(&request)?;
+            let value: Value = callback.call(arguments)?;
+            let value = serde_json::to_value(value)?;
+            Ok(serde_json::from_value(value)?)
+        }
+        .await;
+        result.map_err(|error| {
+            error!("{error}");
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error")
+        })
+    }
 }
